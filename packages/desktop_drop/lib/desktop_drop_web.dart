@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:desktop_drop/src/js_interop_web.dart';
 import 'package:web/web.dart' as web;
 import 'dart:js_interop';
 
@@ -69,6 +70,7 @@ class DesktopDropWeb {
 
     final web.File file = await fileCompleter.future;
 
+    setSelectedFileObjects(file as JSAny);
     return WebDropItem(
       uri: web.URL.createObjectURL(file),
       name: file.name,
