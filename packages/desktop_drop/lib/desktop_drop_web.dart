@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 
 import 'src/web_drop_item.dart';
+import 'dart:js_util' as js_util;
 
 /// A web implementation of the DesktopDrop plugin.
 class DesktopDropWeb {
@@ -69,8 +70,11 @@ class DesktopDropWeb {
 
     final web.File file = await fileCompleter.future;
 
+    final map = js_util.getProperty(web.window, 'drag_and_drop_files');
+    String uri = web.URL.createObjectURL(file);
+    js_util.setProperty(map, uri, file);
     return WebDropItem(
-      uri: web.URL.createObjectURL(file),
+      uri: uri,
       name: file.name,
       size: file.size,
       lastModified: DateTime.fromMillisecondsSinceEpoch(file.lastModified),
@@ -78,7 +82,6 @@ class DesktopDropWeb {
       type: file.type,
       children: [],
     );
-
   }
 
   void _registerEvents() {
@@ -90,6 +93,7 @@ class DesktopDropWeb {
       Future.wait(List.generate(items.length, (index) {
         final item = items[index];
         final entry = item.webkitGetAsEntry()!;
+        js_util.setProperty(web.window, 'drag_and_drop_files', js_util.newObject());
         return _entryToWebDropItem(entry);
       })).then((webItems) {
         channel.invokeMethod(
