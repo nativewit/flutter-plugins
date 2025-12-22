@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:js_interop_unsafe';
 
 import 'package:web/web.dart' as web;
 import 'dart:js_interop';
@@ -8,7 +9,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_web_plugins/flutter_web_plugins.dart';
 
 import 'src/web_drop_item.dart';
-import 'dart:js_util' as js_util;
 
 /// A web implementation of the DesktopDrop plugin.
 class DesktopDropWeb {
@@ -70,9 +70,12 @@ class DesktopDropWeb {
 
     final web.File file = await fileCompleter.future;
 
-    final map = js_util.getProperty(web.window, 'drag_and_drop_files');
     String uri = web.URL.createObjectURL(file);
-    js_util.setProperty(map, uri, file);
+    //js-interop part for storing the file in a global map
+    final windowObj = web.window as JSObject;
+    JSObject map =
+        windowObj.getProperty('drag_and_drop_files'.toJS) as JSObject;
+    map.setProperty(uri.toJS, file);
     return WebDropItem(
       uri: uri,
       name: file.name,
@@ -93,7 +96,13 @@ class DesktopDropWeb {
       Future.wait(List.generate(items.length, (index) {
         final item = items[index];
         final entry = item.webkitGetAsEntry()!;
-        js_util.setProperty(web.window, 'drag_and_drop_files', js_util.newObject());
+        //js-interop part for initializing the global map
+        final windowObj = web.window as JSObject;
+        final map = JSObject();
+        windowObj.setProperty(
+          'drag_and_drop_files'.toJS,
+          map,
+        );
         return _entryToWebDropItem(entry);
       })).then((webItems) {
         channel.invokeMethod(
