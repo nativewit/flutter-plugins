@@ -47,6 +47,7 @@ class DesktopDropWeb {
         ..removeWhere(
             (element) => element.name == '.DS_Store' && element.type == '');
 
+
       return WebDropItem(
         uri: web.URL.createObjectURL(web.Blob().slice(0, 0, 'directory')),
         name: entry.name,
@@ -93,16 +94,17 @@ class DesktopDropWeb {
 
       final items = event.dataTransfer!.items;
 
+      //js-interop part for initializing the global map - must be BEFORE the loop
+      final windowObj = web.window as JSObject;
+      final map = JSObject();
+      windowObj.setProperty(
+        'drag_and_drop_files'.toJS,
+        map,
+      );
+
       Future.wait(List.generate(items.length, (index) {
         final item = items[index];
         final entry = item.webkitGetAsEntry()!;
-        //js-interop part for initializing the global map
-        final windowObj = web.window as JSObject;
-        final map = JSObject();
-        windowObj.setProperty(
-          'drag_and_drop_files'.toJS,
-          map,
-        );
         return _entryToWebDropItem(entry);
       })).then((webItems) {
         channel.invokeMethod(
